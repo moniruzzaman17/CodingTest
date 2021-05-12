@@ -10,4 +10,12 @@ class Product extends Model
         'title', 'sku', 'description'
     ];
 
+    function variantPrice() {
+      return $this->hasMany('App\Models\ProductVariantPrice','product_id','id');
+    }
+
+    function price() {
+      return $this->hasOne('App\Models\ProductVariantPrice','product_id','id');
+    }
+
 }

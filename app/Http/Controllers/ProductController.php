@@ -17,7 +17,9 @@ class ProductController extends Controller
      */
     public function index()
     {
-        return view('products.index');
+        $products = Product::with('price','variantPrice','variantPrice.variantOne','variantPrice.variantTwo','variantPrice.variantThree')->orderBy('id','Desc')->paginate(2)->onEachSide(0);
+        // dd($products[0]->variantPrice[0]->variantOne->variant);
+        return view('products.index', compact('products'));
     }
 
     /**
@@ -39,7 +41,7 @@ class ProductController extends Controller
      */
     public function store(Request $request)
     {
-
+        return response()->json($request->all());
     }
 
 
