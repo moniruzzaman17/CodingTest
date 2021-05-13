@@ -8,14 +8,21 @@
 
 
 <div class="card">
-    <form action="" method="get" class="card-header">
+    <form action="{{route('product.filter')}}" method="get" class="card-header">
         <div class="form-row justify-content-between">
             <div class="col-md-2">
-                <input type="text" name="title" placeholder="Product Title" class="form-control">
+                <input type="text" name="title" placeholder="Product Title" class="form-control" value="{{old('title')}}">
             </div>
             <div class="col-md-2">
                 <select name="variant" id="" class="form-control">
+                    <option value="">Select Variant</option>
+                    @foreach ($productVariants as $key => $productVariant)
+                    <optgroup label="{{ucwords($productVariant->title)}}">
+                    @foreach ($productVariant->variantTag as $key => $variantTag)
 
+                    <option value="{{$variantTag->variant}}">{{$variantTag->variant}}</option>
+                    @endforeach
+                    @endforeach
                 </select>
             </div>
 
@@ -36,7 +43,6 @@
             </div>
         </div>
     </form>
-
     <div class="card-body">
         <div class="table-response">
             <table class="table">
@@ -59,7 +65,7 @@
                         <td>
                             {{-- checking is product has variant or not --}}
                             @if(count($product->variantPrice)>1)
-                            <dl class="row mb-0" style="height: 80px; overflow: hidden" id="variant">
+                            <dl class="row mb-0" style="height: 80px; overflow: hidden" id="variant{{$product->id}}">
                                 @foreach ($product->variantPrice as $key => $variantPrice)
                                 <dt class="col-sm-3 pb-0">
                                     {{$variantPrice->variantOne->variant}} {{!empty($variantPrice->product_variant_two) ? '/'.$variantPrice->variantTwo->variant : ''}} {{!empty($variantPrice->product_variant_three) ? '/'.$variantPrice->variantThree->variant : ''}}
@@ -72,14 +78,24 @@
                                 </dd>
                                 @endforeach
                             </dl>
-                            <button onclick="$('#variant').toggleClass('h-auto')" class="btn btn-sm btn-link">Show more</button>
+                            <button onclick="$('#variant{{$product->id}}').toggleClass('h-auto')" class="btn btn-sm btn-link">Show more</button>
                             @else
-                            N/A
+                            <dl class="row mb-0" style="height: 80px; overflow: hidden">
+                                <dt class="col-sm-3 pb-0">
+                                    N/A
+                                </dt>
+                                <dd class="col-sm-9">
+                                    <dl class="row mb-0">
+                                        <dt class="col-sm-4 pb-0">Price : {{ number_format($product->variantPrice[0]->price,2) }}</dt>
+                                        <dd class="col-sm-8 pb-0">InStock : {{ number_format($product->variantPrice[0]->stock,0) }}</dd>
+                                    </dl>
+                                </dd>
+                            </dl>
                             @endif
                         </td>
                         <td>
                             <div class="btn-group btn-group-sm">
-                                <a href="{{ route('product.edit', 1) }}" class="btn btn-success">Edit</a>
+                                <a href="{{ route('product.edit',$product->id) }}" class="btn btn-success">Edit</a>
                             </div>
                         </td>
                     </tr>

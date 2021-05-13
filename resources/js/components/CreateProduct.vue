@@ -1,5 +1,8 @@
 <template>
     <section>
+        <div v-if="success" class="alert alert-success" id="createSuccess" role="alert">
+            Product has been saved
+        </div>
         <div class="row">
             <div class="col-md-6">
                 <div class="card shadow mb-4">
@@ -10,7 +13,8 @@
                         </div>
                         <div class="form-group">
                             <label for="">Product SKU</label>
-                            <input type="text" v-model="product_sku" placeholder="Product Name" class="form-control">
+                            <input v-if="createProduct" type="text" v-model="product_sku" placeholder="Product Name" class="form-control">
+                            <input v-else="createProduct" type="text" v-model="product_sku" readonly placeholder="Product Name" class="form-control">
                         </div>
                         <div class="form-group">
                             <label for="">Description</label>
@@ -24,56 +28,59 @@
                         <h6 class="m-0 font-weight-bold text-primary">Media</h6>
                     </div>
                     <div class="card-body border">
-                        <vue-dropzone ref="myVueDropzone" id="dropzone" :options="dropzoneOptions"></vue-dropzone>
+                        <vue-dropzone ref="myVueDropzone" id="dropzone" :options="dropzoneOptions" :useCustomSlot="true"
+                        v-on:vdropzone-success="uploadSuccess"
+                        v-on:vdropzone-error="uploadError"
+                        v-on:vdropzone-removed-file="fileRemoved"></vue-dropzone>
                     </div>
                 </div>
             </div>
 
             <div class="col-md-6">
                 <div class="card shadow mb-4">
-                    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <div v-if="createVariant" class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
                         <h6 class="m-0 font-weight-bold text-primary">Variants</h6>
                     </div>
-                    <div class="card-body">
+                    <div class="card-body" v-if="createVariant">
                         <div class="row" v-for="(item,index) in product_variant">
                             <div class="col-md-4">
                                 <div class="form-group">
                                     <label for="">Option</label>
                                     <select v-model="item.option" class="form-control">
                                         <option v-for="variant in variants"
-                                                :value="variant.id">
-                                            {{ variant.title }}
-                                        </option>
-                                    </select>
-                                </div>
+                                        :value="variant.id">
+                                        {{ variant.title }}
+                                    </option>
+                                </select>
                             </div>
-                            <div class="col-md-8">
-                                <div class="form-group">
-                                    <label v-if="product_variant.length != 1" @click="product_variant.splice(index,1); checkVariant"
-                                           class="float-right text-primary"
-                                           style="cursor: pointer;">Remove</label>
-                                    <label v-else for="">.</label>
-                                    <input-tag v-model="item.tags" @input="checkVariant" class="form-control"></input-tag>
-                                </div>
+                        </div>
+                        <div class="col-md-8">
+                            <div class="form-group">
+                                <label v-if="product_variant.length != 1" @click="product_variant.splice(index,1); checkVariant"
+                                class="float-right text-primary"
+                                style="cursor: pointer;">Remove</label>
+                                <label v-else for="">.</label>
+                                <input-tag v-model="item.tags" @input="checkVariant" class="form-control"></input-tag>
                             </div>
                         </div>
                     </div>
-                    <div class="card-footer" v-if="product_variant.length < variants.length && product_variant.length < 3">
-                        <button @click="newVariant" class="btn btn-primary">Add another option</button>
-                    </div>
+                </div>
+                <div class="card-footer" v-if="product_variant.length < variants.length && product_variant.length < 3 && createVariant">
+                    <button @click="newVariant" class="btn btn-primary">Add another option</button>
+                </div>
 
-                    <div class="card-header text-uppercase">Preview</div>
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table">
-                                <thead>
+                <div class="card-header text-uppercase">Preview</div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
                                 <tr>
                                     <td>Variant</td>
                                     <td>Price</td>
                                     <td>Stock</td>
                                 </tr>
-                                </thead>
-                                <tbody>
+                            </thead>
+                            <tbody>
                                 <tr v-for="variant_price in product_variant_prices">
                                     <td>{{ variant_price.title }}</td>
                                     <td>
@@ -83,17 +90,18 @@
                                         <input type="text" class="form-control" v-model="variant_price.stock">
                                     </td>
                                 </tr>
-                                </tbody>
-                            </table>
-                        </div>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
         </div>
+    </div>
 
-        <button @click="saveProduct" type="submit" class="btn btn-lg btn-primary">Save</button>
-        <button type="button" class="btn btn-secondary btn-lg">Cancel</button>
-    </section>
+    <button @click="saveProduct" v-if="createVariant" type="submit" class="btn btn-lg btn-primary">Save</button>
+    <button @click="saveProduct" v-else="createVariant" type="submit" class="btn btn-lg btn-primary">Update</button>
+    <button type="button" class="btn btn-secondary btn-lg">Cancel</button>
+</section>
 </template>
 
 <script>
@@ -110,31 +118,53 @@ export default {
         variants: {
             type: Array,
             required: true
+        },
+        products: {
+            // type: Array,
+            required: false
         }
     },
     data() {
         return {
+            // products:this.productss,
+            createProduct:true,
+            success:false,
+            createVariant:true,
+            product_ID: '',
             product_name: '',
             product_sku: '',
             description: '',
             images: [],
+            fileName: '',
             product_variant: [
-                {
-                    option: this.variants[0].id,
-                    tags: []
-                }
+            {
+                option: this.variants[0].id,
+                tags: []
+            }
             ],
             product_variant_prices: [],
             dropzoneOptions: {
-                url: 'https://httpbin.org/post',
-                thumbnailWidth: 150,
-                maxFilesize: 0.5,
-                headers: {"My-Awesome-Header": "header value"}
+                url: "/api/files",
+                addRemoveLinks: true,
+                maxFiles: 2
             }
         }
     },
     methods: {
         // it will push a new object into product variant
+
+        uploadSuccess(file, response) {
+            // console.log(response.data);
+            console.log('File Successfully Uploaded with file name: ' + response.file);
+            this.fileName = response.file;
+            this.images.push({
+                filename: response.file
+            })
+        },
+        uploadError(file, message) {
+            console.log('An Error Occurred');
+        },
+        fileRemoved() {},
         newVariant() {
             let all_variants = this.variants.map(el => el.id)
             let selected_variants = this.product_variant.map(el => el.option);
@@ -179,7 +209,11 @@ export default {
 
         // store product into database
         saveProduct() {
+            // window.location.reload();
             let product = {
+                productIDforEdit: this.product_ID,
+                createProduct: this.createProduct,
+                createProduct: this.createProduct,
                 title: this.product_name,
                 sku: this.product_sku,
                 description: this.description,
@@ -191,17 +225,62 @@ export default {
 
             axios.post('/product', product).then(response => {
                 console.log(response.data);
-            }).catch(error => {
-                console.log(error);
-            })
-
-            console.log(product);
-        }
-
-
+            // window.location.reload();
+            if (response.data == "success") {
+                this.success = true;
+                alert('Product has been saved');
+                window.location.reload();
+            }
+        }).catch(error => {
+            window.location.reload();
+            console.log(error);
+        })
     },
-    mounted() {
-        console.log('Component mounted.')
+    editTrue(products){
+        this.product_ID = products.id;
+        this.createProduct = false;
+        this.createVariant = false;
+        this.product_name = products.title;
+        this.product_sku = products.sku;
+        this.description = products.description;
+        products.images.forEach(item => {
+            this.filename = item.file_path;
+        });
+        console.log(this.filename);
+        products.variant_price.forEach(item => {
+            console.log(item.variant_three);
+            if(item.variant_two !== null){
+                var v2 = '/'+item.variant_two.variant;
+            }
+            else{
+                var v2 = '';
+            }
+            if(item.variant_three !== null){
+                var v3 = '/'+item.variant_three.variant;
+            }
+            else{
+                var v3 = '';
+            }
+
+            this.product_variant_prices.push({
+                title: item.variant_one.variant+v2+v3,
+                price: item.price,
+                stock: item.stock
+            })
+        })
     }
+
+
+},
+mounted() {
+    if (this.products !== undefined) {
+        this.editTrue(this.products);
+    }
+    else{
+    }
+    console.log('Component mounted.');
+    console.log(this.success);
+    console.log(this.dropzoneOptions);
+}
 }
 </script>
